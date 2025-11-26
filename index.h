@@ -16,7 +16,7 @@ typedef struct
 
 typedef struct
 {
-  Indexbook *index_array;
+  Indexbook **index_array;
   size_t used;
   size_t size;
 } Array_index;
@@ -27,13 +27,13 @@ typedef struct
 
 Indexbook *create_Indexbook(int key, long int offset, size_t size);
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos);
-int bin_search_find(Indexbook **array, Indexbook index_search, int beginning, int end);
-int bin_search_delete(Indexbook **array, Indexbook index_search, int beginning, int end);
+int bin_search_find(Indexbook **array, Indexbook *index_search, int beginning, int end);
+int bin_search_delete(Indexbook **array, Indexbook *index_search, int beginning, int end);
 void free_Indexbook(Indexbook *indexbook);
 
 void initArray(Array_index *ai, size_t initalSize);
-void insertArray(Array_index *ai, Indexbook index);
-void deletetArray(Array_index *ai, Indexbook index);
+Status insertArray(Array_index *ai, Indexbook *index);
+Status deletetArray(Array_index *ai, Indexbook *index);
 void freeArray(Array_index *ai);
 
 void find(array *indexarray, int bookId);
