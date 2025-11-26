@@ -27,6 +27,36 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
   return new_index;
 }
 
+Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos){
+  int middle;
+
+  if (!array || end < beginning || bookId < 0)
+  {
+    return -1;
+  }
+
+  while (beginning < end)
+  {
+    middle = (beginning-end)/2;
+
+    if (array->index_array[middle].key == bookId)
+    {
+      *pos = middle;
+      return array->index_array[middle];
+    } 
+    else if (array->index_array[middle].key > bookId)
+    {
+      end = middle -1;
+    } 
+    else if (array->index_array[middle].key < bookId)
+    {
+      beginning = middle+1;
+    } 
+  }
+  
+  return NULL;
+}
+
 int bin_search_find(Indexbook **array, Indexbook *index_search, int beginning, int end)
 {
   int pos;
@@ -252,26 +282,28 @@ void find(Array_index *indexarray, char *filename, int bookId){
   return;
 }
 
-void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, int bookId){
+/* por terminar */
+void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *index_register, char *indexdeleted_register, int bookId){
   Indexbook *index = NULL;
   int *pos=NULL;
-  if(!indexarray || !indexdeletedarray || bookId<0){
+
+  if(!indexarray || !indexdeletedarray || !index_register || !indexdeleted_register || bookId<0){
     return;
   }
 
-  index = find_index_fromId(indexarray, bookId, 0, ai->used, pos);
+  index = find_index_fromId(indexarray, bookId, 0, indexarray->used, pos);
   if(!index || !pos){
     fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
     return;
   }
 
-  /*añadir una entrada en el listado de registros borrados*/
+  /* Se añade una entrada en el array de borrados*/
+  /* FALTA ESCRIBIR EN EL REGISTRO */
   insertArray(indexdeletedarray, index);
 
-  /*actualizar el indice*/
+  /* Se elimina del array de índices */
   deleteArray(indexarray, index);
 
   fprintf(stdout, "Record with bookId=%d has been deleted\n", bookId);
-
   return;
 }
