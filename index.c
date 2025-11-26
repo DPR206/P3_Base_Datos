@@ -159,3 +159,56 @@ void freeArray(Array_index *ai)
 
   return;
 }
+
+void find(Array_index *indexarray, char *filename, int bookId){
+  Indexbook *index=NULL;
+  int *pos=NULL;
+  FILE *flibrary = NULL;
+  char *info = NULL;
+
+  if(!indexarray || !libray || bookId<0){
+    return;
+  }
+
+  index = find_index_fromId(indexarray, bookId, 0, ai->used, pos);
+  if(!index || !pos){
+    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
+    return;
+  }
+
+  flibrary = fopen(filename, "rb+");
+  fseek(flibrary, pos);
+  if (fread(info, index->size, 1, flibrary) < 1){
+    return;
+  }
+
+  fprintf(stdout, "%s\n", info);
+
+  fclose(flibrary);
+  free_Indexbook(index);
+  return;
+}
+
+void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, int bookId){
+  Indexbook *index = NULL;
+  int *pos=NULL;
+  if(!indexarray || !indexdeletedarray || bookId<0){
+    return;
+  }
+
+  index = find_index_fromId(indexarray, bookId, 0, ai->used, pos);
+  if(!index || !pos){
+    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
+    return;
+  }
+
+  /*añadir una entrada en el listado de registros borrados*/
+  insertArray(indexdeletedarray, index);
+
+  /*actualizar el indice*/
+  deleteArray(indexarray, index);
+
+  fprintf(stdout, "Record with bookId=%d has been deleted\n", bookId);
+
+  return;
+}
