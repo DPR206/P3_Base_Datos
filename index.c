@@ -253,23 +253,38 @@ void freeArray(Array_index *ai)
   return;
 }
 
-void find(Array_index *indexarray, char *filename, int bookId){
+void add(Array_index *indexarray, char *index_file, int bookId, char *info){
+  int *pos = NULL;
+
+  if(!indexarray || !index_file || bookId < 0 || !info){
+    return;
+  }
+
+  index = find_index_fromId(indexarray, bookId, 0, indexarray->used, pos);
+  if(index != NULL){
+    fprintf(stdout, "Record with bookId=%d exists.\n", bookId);
+    return;
+  }
+
+}
+
+void find(Array_index *indexarray, char *index_file, int bookId){
   Indexbook *index=NULL;
   int *pos=NULL;
   FILE *flibrary = NULL;
   char *info = NULL;
 
-  if(!indexarray || !libray || bookId<0){
+  if(!indexarray || !index_register || bookId<0){
     return;
   }
 
-  index = find_index_fromId(indexarray, bookId, 0, ai->used, pos);
+  index = find_index_fromId(indexarray, bookId, 0, indexarray->used, pos);
   if(!index || !pos){
     fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
     return;
   }
 
-  flibrary = fopen(filename, "rb+");
+  flibrary = fopen(index_file, "rb+");
   fseek(flibrary, pos);
   if (fread(info, index->size, 1, flibrary) < 1){
     return;
@@ -283,7 +298,7 @@ void find(Array_index *indexarray, char *filename, int bookId){
 }
 
 /* por terminar */
-void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *index_register, char *indexdeleted_register, int bookId){
+void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId){
   Indexbook *index = NULL;
   int *pos=NULL;
 
