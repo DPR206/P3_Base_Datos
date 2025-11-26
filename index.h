@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum {ERROR = -1, OK = 0}Status;
+
 typedef struct
 {
   int key; /*book isbn*/
