@@ -38,5 +38,6 @@ Status insertArray(Array_index *ai, Indexbook *index);
 Status deletetArray(Array_index *ai, Indexbook *index);
 void freeArray(Array_index *ai);
 
-void find(array *indexarray, int bookId);
-void del(array *indexarray, array *indexdeletedarray, int bookId);
+void add(Array_index *indexarray, char *index_file, int bookId, char *info);
+void find(Array_index *indexarray, char *index_file, int bookId);
+void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId);
