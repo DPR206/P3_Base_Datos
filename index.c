@@ -322,3 +322,90 @@ void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *i
   fprintf(stdout, "Record with bookId=%d has been deleted\n", bookId);
   return;
 }
+
+Status save_index(char *filename, Array_index *ai)
+{
+  FILE *index_file = NULL;
+  int i;
+  /*int error;*/ /*Habría que hacer un control de errores de fwrite*/
+
+  if (!filename || !ai || !ai->index_array)
+  {
+    return ERROR;
+  }
+  
+  index_file = fopen(filename, "wb");
+
+  if (!index_file)
+  {
+    return ERROR;
+  }
+  
+  for ( i = 0; i < ai->used; i++)
+  {
+    fwrite(&ai->index_array[i]->key, sizeof(int), 1, index_file);
+    fwrite(&ai->index_array[i]->offset, sizeof(long int), 1, index_file);
+    fwrite(&ai->index_array[i]->size, sizeof(size_t), 1, index_file);
+  }
+  
+  fclose(index_file);
+  index_file = NULL;
+
+  return OK;
+}
+
+Array_index *load_index(char *filename)
+{
+  Array_index *new_array = NULL;
+  FILE *index_file = NULL;
+  Indexbook *new_index = NULL;
+  Status st = OK;
+  int *key_aux;
+  long int *offset_aux;
+  size_t *size_aux;
+
+  if (!filename)
+  {
+    return NULL;
+  }
+  
+  new_array = (Array_index *)calloc(1, sizeof(Array_index));
+
+  if (!new_array)
+  {
+    return NULL;
+  }
+  
+  index_file = fopen(filename, "rb");
+
+  if (!index_file)
+  {
+    return NULL;
+  }
+
+  initArray(new_array, 5);
+
+  while (!feof(index_file))
+  {
+    fread(key_aux, sizeof(int), 1, index_file);
+    fread(offset_aux, sizeof(long int), 1, index_file);
+    fread(size_aux, sizeof(size_t), 1, index_file);
+
+    new_index = create_Indexbook(key_aux, offset_aux, size_aux);
+
+    if (!new_index)
+    {
+      return NULL;
+    }
+    
+    st = insertArray(new_array, new_index);
+
+    if (st == ERROR)
+    {
+      return ERROR;
+    }
+    
+  }
+  
+  return new_array;
+}
