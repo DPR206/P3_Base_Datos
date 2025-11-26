@@ -41,3 +41,6 @@ void freeArray(Array_index *ai);
 void add(Array_index *indexarray, char *index_file, int bookId, char *info);
 void find(Array_index *indexarray, char *index_file, int bookId);
 void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId);
+
+Status save_index(char *filename, Array_index *ai);
+Array_index *load_index(char *filename);
