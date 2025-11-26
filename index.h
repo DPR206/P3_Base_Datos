@@ -23,6 +23,13 @@ typedef struct
   size_t size;
 } Array_index;
 
+typedef struct
+{
+  Indexdeletedbook *indexdeleted_array;
+  size_t used;
+  size_t size;
+} Array_indexdeleted;
+
 #define BESTFIT 0
 #define WORSTFIT 1
 #define FIRSTFIT 2
