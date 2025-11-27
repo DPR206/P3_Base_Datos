@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef enum {ERROR = -1, OK = 0}Status;
-
 typedef struct
 {
   int key; /*book isbn*/
@@ -25,7 +23,7 @@ typedef struct
 
 typedef struct
 {
-  Indexdeletedbook *indexdeleted_array;
+  Indexdeletedbook **indexdeleted_array;
   size_t used;
   size_t size;
 } Array_indexdeleted;
@@ -36,18 +34,15 @@ typedef struct
 
 Indexbook *create_Indexbook(int key, long int offset, size_t size);
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos);
-int bin_search_find(Indexbook **array, Indexbook *index_search, int beginning, int end);
-int bin_search_delete(Indexbook **array, Indexbook *index_search, int beginning, int end);
+int bin_search_find(Array_index *array, Indexbook *index_search, int beginning, int end);
+int bin_search_delete(Array_index *array, Indexbook *index_search, int beginning, int end);
 void free_Indexbook(Indexbook *indexbook);
 
-void initArray(Array_index *ai, size_t initalSize);
-Status insertArray(Array_index *ai, Indexbook *index);
-Status deletetArray(Array_index *ai, Indexbook *index);
+Array_index *initArray(size_t initialSize);
+void insertArray(Array_index *ai, Indexbook *index);
+void deleteArray(Array_index *ai, Indexbook *index);
 void freeArray(Array_index *ai);
 
-void add(Array_index *indexarray, char *index_file, int bookId, char *info);
+void add(Array_index *indexarray, char *index_file, int key, long int offset, size_t size, char *info);
 void find(Array_index *indexarray, char *index_file, int bookId);
 void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId);
-
-Status save_index(char *filename, Array_index *ai);
-Array_index *load_index(char *filename);
