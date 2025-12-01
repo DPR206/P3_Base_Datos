@@ -4,6 +4,14 @@
 
 #include "index.h"
 
+
+
+/********************************/
+/*      FUNCIONES INDEXBOOK     */
+/********************************/
+
+
+
 Indexbook *create_Indexbook(int key, long int offset, size_t size)
 {
   Indexbook *new_index = NULL;
@@ -26,6 +34,54 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
 
   return new_index;
 }
+
+void free_Indexbook(Indexbook *indexbook)
+{
+  free(indexbook);
+  return;
+}
+
+
+
+/********************************/
+/*    FUNCIONES INDEXDELETED    */
+/********************************/
+
+
+
+Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size){
+  Indexdeletedbook *new_index = NULL;
+
+  if (offset < 0 || size < 0)
+  {
+    return NULL;
+  }
+  
+  new_index = (Indexdeletedbook *)calloc(1, sizeof(Indexdeletedbook));
+
+  if (!new_index)
+  {
+    return NULL;
+  }
+  
+  new_index->offset = offset;
+  new_index->size = size;
+
+  return new_index;
+}
+
+void free_Indexdeleted(Indexdeletedbook *indexdeleted){
+  free(indexdeleted);
+  return;
+}
+
+
+
+/********************************/
+/*  FUNCIONES BUSQUEDA BINARIA  */
+/********************************/
+
+
 
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos){
   int middle;
@@ -57,65 +113,20 @@ Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int 
   return NULL;
 }
 
-/* */
-int bin_search_delete(Array_index *array, Indexbook *index_search, int beginning, int end)
+int bin_search(Array_index *array, int F, int L, Indexbook *index)
 {
-  int pos;
-  int middle;
-  int end_aux = end;
-
-  if (!array || !index_search || beginning>end || sizeof(array) == 0 )
-  {
-    return -1;
-  }
-  
-  while (beginning < end)
-  {
-    middle = (beginning + end) / 2;
-
-    if (array->index_array[middle-1]->key < index_search->key && array->index_array[middle]->key > index_search->key)
-    {
-      return middle;
-    } 
-    else if (array->index_array[middle]->key < index_search && array->index_array[middle+1]->key > index_search->key)
-    {
-      return middle++;
-    }
-    else if (array->index_array[middle]->key > index_search->key && array->index_array[middle-1]->key > index_search->key)
-    {
-      end = middle - 1;
-    }
-    else if (array->index_array[middle]->key < index_search->key && array->index_array[middle+1]->key < index_search)
-    {
-      beginning = middle + 1;
-    }
-  }
-
-  if (array->index_array[end_aux]->key < index_search->key)
-  {
-    return end_aux++;
-  }
-  
-  return;
-}
-
-int bin_search(int *table, int F, int L, Indexbook *index, int *ppos)
-{
-	int OB=0;
   int f=F, l=L, m;
   /* Comprobacion de errores */
-  if (!table || L<F || !ppos){
-    return ERR;
+  if (!array || !array->index_array || L<F || !index){
+    return -1;
   }
 
   /* Busqueda binaria */
   while(f<=l){
     m = (f + l )/2;
-    OB++;
-    if(table[m]==key){
-      *ppos = m + 1;
-      return OB;
-    } else if (table[m] > key) {
+    if(array->index_array[m]->key==index->key){
+      return m;
+    } else if (array->index_array[m]->key > index->key) {
       l = m - 1;
     } else {
       f = m + 1;
@@ -123,14 +134,70 @@ int bin_search(int *table, int F, int L, Indexbook *index, int *ppos)
   }
 
   /* No se ha encontrado la clave dentro de la tabla */
-  return NOT_FOUND;
+  return -1;
 }
 
-void free_Indexbook(Indexbook *indexbook)
-{
-  free(indexbook);
+
+
+/********************************/
+/* FUNCIONES ARRAY_INDEXDELETED */
+/********************************/
+
+
+
+Array_indexdeleted *initArrayDeleted(size_t initialSize){
+  Array_indexdeleted *new = NULL;
+
+  if (initialSize == 0) 
+  {
+    return NULL;
+  }
+  
+  new = (Array_indexdeleted *)calloc(1, sizeof(Array_indexdeleted));
+
+  /*Create initial empty array of size initialSize*/
+  new->indexdeleted_array = (Indexdeletedbook **)calloc(initialSize, sizeof(Indexdeletedbook *));
+  if (!new->indexdeleted_array)
+  {
+    free(new);
+    return NULL;
+  }
+  
+  new->used = 0;
+  new->size = initialSize;
+
+  return new;
+}
+
+void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index){
+
+  Indexdeletedbook **tmp;
+
+  if (!array || !index)
+  {
+    return;
+  }
+
+  if (array->used == array->size)
+  {
+    array->size *= 2;
+    tmp = realloc(array->indexdeleted_array, array->size * sizeof(Indexdeletedbook *));
+    if(!tmp) return;
+    array->indexdeleted_array = tmp;
+  }
+
   return;
 }
+
+int deleteArrayDeleted(Array_indexdeleted *array, int bookId);
+void freeArrayDeleted(Array_indexdeleted *array);
+
+
+/********************************/
+/*     FUNCIONES ARRAY_INDEX    */
+/********************************/
+
+
 
 Array_index *initArray(size_t initialSize)
 {
@@ -178,7 +245,6 @@ void insertArray(Array_index *ai, Indexbook *index)
     ai->index_array = tmp;
   }
 
-   /*Insert index in array*/
   if (ai->used == 0){
     pos = 0;
   } else {
@@ -204,24 +270,26 @@ void insertArray(Array_index *ai, Indexbook *index)
   return;
 }
 
-void deleteArray(Array_index *ai, Indexbook *index)
+int deleteArray(Array_index *ai, int bookId)
 {
   int pos;
+  Indexbook *index=NULL;
 
-  if (!ai || !index)
+  if (!ai || bookId < 0)
   {
-    return;
+    return -1;
   }
   
-  pos = bin_search_delete(ai, index, 0, ai->used);
-  if (pos == -1)
+  index = find_index_fromId(ai, bookId, 0, ai->used - 1, &pos);
+  if (!index)
   {
-    return;
+    return -1;
   }
       
   memmove(ai->index_array+pos, ai->index_array+pos+1, (ai->used-pos)*sizeof(Indexbook *));
-    
-  return;
+  ai->used--; 
+
+  return 0;
 }
 
 
@@ -242,8 +310,14 @@ void freeArray(Array_index *ai)
   return;
 }
 
-/* COMANDOS PRINCIPALES*/
-/*por terminar*/
+
+
+/********************************/
+/*     COMANDOS PRINCIPALES     */
+/********************************/
+
+
+
 void add(Array_index *indexarray, char *index_file, int key, long int offset, size_t size, char *info){
   Indexbook *index = NULL;
   int pos;
@@ -278,7 +352,7 @@ void find(Array_index *indexarray, char *index_file, int bookId){
     return;
   }
 
-  index = find_index_fromId(indexarray, bookId, 0, indexarray->used, &pos);
+  index = find_index_fromId(indexarray, bookId, 0, indexarray->used - 1, &pos);
   if(!index){
     fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
     return;
@@ -314,26 +388,22 @@ void find(Array_index *indexarray, char *index_file, int bookId){
 
 /* por terminar */
 void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId){
-  Indexbook *index = NULL;
-  int *pos=NULL;
 
-  if(!indexarray || !indexdeletedarray || !indexdeleted_file || bookId<0){
+  if(!indexarray /*|| !indexdeletedarray*/ || !indexdeleted_file || bookId<0){
     return;
   }
 
-  index = find_index_fromId(indexarray, bookId, 0, indexarray->used, pos);
-  if(!index || !pos){
-    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
-    return;
-  }
 
-  /* Se añade una entrada en el array de borrados*/
   /* FALTA ESCRIBIR EN EL REGISTRO */
   /*insertArray(indexdeletedarray, index); /*Cambiar para array deleted*/
 
   /* Se elimina del array de índices */
-  deleteArray(indexarray, index);
+  if (deleteArray(indexarray, bookId) == -1){
+    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
+    return;
+  }
 
   fprintf(stdout, "Record with bookId=%d has been deleted\n", bookId);
+
   return;
 }

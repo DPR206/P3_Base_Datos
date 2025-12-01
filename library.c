@@ -24,6 +24,7 @@ int main() {
     }
 
     del(indexarray, indexdeletedarray, deleted_file, 2);
+    del(indexarray, indexdeletedarray, deleted_file, 4);
 
     for(i=0; i<2; i++){
     fprintf(stdout, "%d, %ld, %ld\n", indexarray->index_array[i]->key, indexarray->index_array[i]->offset, indexarray->index_array[i]->size);
