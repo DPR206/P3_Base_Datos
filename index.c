@@ -58,40 +58,6 @@ Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int 
 }
 
 /* */
-int bin_search_find(Array_index *array, Indexbook *index_search, int beginning, int end)
-{
-  int pos;
-  int middle;
-
-  if (!array || end < beginning || sizeof(array) == 0)
-  {
-    return -1;
-  }
-
-  while (beginning <  end)
-  {
-    middle = (beginning+end)/2;
-
-    if (array->index_array[middle]->key == index_search->key)
-    {
-      return middle;
-    } 
-    else if (array->index_array[middle]->key > index_search->key)
-    {
-      end = middle -1;
-    } 
-    else if (array->index_array[middle]->key < index_search->key)
-    {
-      beginning = middle+1;
-    }
-    
-    
-  }
-  
-  return -1;
-}
-
-/* */
 int bin_search_delete(Array_index *array, Indexbook *index_search, int beginning, int end)
 {
   int pos;
@@ -131,6 +97,33 @@ int bin_search_delete(Array_index *array, Indexbook *index_search, int beginning
   }
   
   return;
+}
+
+int bin_search(int *table, int F, int L, Indexbook *index, int *ppos)
+{
+	int OB=0;
+  int f=F, l=L, m;
+  /* Comprobacion de errores */
+  if (!table || L<F || !ppos){
+    return ERR;
+  }
+
+  /* Busqueda binaria */
+  while(f<=l){
+    m = (f + l )/2;
+    OB++;
+    if(table[m]==key){
+      *ppos = m + 1;
+      return OB;
+    } else if (table[m] > key) {
+      l = m - 1;
+    } else {
+      f = m + 1;
+    }
+  }
+
+  /* No se ha encontrado la clave dentro de la tabla */
+  return NOT_FOUND;
 }
 
 void free_Indexbook(Indexbook *indexbook)
@@ -220,7 +213,7 @@ void deleteArray(Array_index *ai, Indexbook *index)
     return;
   }
   
-  pos = bin_search_find(ai, index, 0, ai->used);
+  pos = bin_search_delete(ai, index, 0, ai->used);
   if (pos == -1)
   {
     return;
@@ -336,7 +329,7 @@ void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *i
 
   /* Se añade una entrada en el array de borrados*/
   /* FALTA ESCRIBIR EN EL REGISTRO */
-  insertArray(indexdeletedarray, index); /*Cambiar para array deleted*/
+  /*insertArray(indexdeletedarray, index); /*Cambiar para array deleted*/
 
   /* Se elimina del array de índices */
   deleteArray(indexarray, index);

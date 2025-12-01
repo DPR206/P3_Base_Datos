@@ -34,7 +34,7 @@ typedef struct
 
 Indexbook *create_Indexbook(int key, long int offset, size_t size);
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos);
-int bin_search_find(Array_index *array, Indexbook *index_search, int beginning, int end);
+int bin_search(int *table, int F, int L, Indexbook *index, int *ppos);
 int bin_search_delete(Array_index *array, Indexbook *index_search, int beginning, int end);
 void free_Indexbook(Indexbook *indexbook);
 
