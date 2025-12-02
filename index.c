@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "index.h"
-
+#include "deleted.h"
 
 
 /********************************/
@@ -38,40 +38,6 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
 void free_Indexbook(Indexbook *indexbook)
 {
   free(indexbook);
-  return;
-}
-
-
-
-/********************************/
-/*    FUNCIONES INDEXDELETED    */
-/********************************/
-
-
-
-Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size){
-  Indexdeletedbook *new_index = NULL;
-
-  if (offset < 0 || size < 0)
-  {
-    return NULL;
-  }
-  
-  new_index = (Indexdeletedbook *)calloc(1, sizeof(Indexdeletedbook));
-
-  if (!new_index)
-  {
-    return NULL;
-  }
-  
-  new_index->offset = offset;
-  new_index->size = size;
-
-  return new_index;
-}
-
-void free_Indexdeleted(Indexdeletedbook *indexdeleted){
-  free(indexdeleted);
   return;
 }
 
@@ -137,60 +103,6 @@ int bin_search(Array_index *array, int F, int L, Indexbook *index)
   return -1;
 }
 
-
-
-/********************************/
-/* FUNCIONES ARRAY_INDEXDELETED */
-/********************************/
-
-
-
-Array_indexdeleted *initArrayDeleted(size_t initialSize){
-  Array_indexdeleted *new = NULL;
-
-  if (initialSize == 0) 
-  {
-    return NULL;
-  }
-  
-  new = (Array_indexdeleted *)calloc(1, sizeof(Array_indexdeleted));
-
-  /*Create initial empty array of size initialSize*/
-  new->indexdeleted_array = (Indexdeletedbook **)calloc(initialSize, sizeof(Indexdeletedbook *));
-  if (!new->indexdeleted_array)
-  {
-    free(new);
-    return NULL;
-  }
-  
-  new->used = 0;
-  new->size = initialSize;
-
-  return new;
-}
-
-void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index){
-
-  Indexdeletedbook **tmp;
-
-  if (!array || !index)
-  {
-    return;
-  }
-
-  if (array->used == array->size)
-  {
-    array->size *= 2;
-    tmp = realloc(array->indexdeleted_array, array->size * sizeof(Indexdeletedbook *));
-    if(!tmp) return;
-    array->indexdeleted_array = tmp;
-  }
-
-  return;
-}
-
-int deleteArrayDeleted(Array_indexdeleted *array, int bookId);
-void freeArrayDeleted(Array_indexdeleted *array);
 
 
 /********************************/
@@ -270,7 +182,7 @@ void insertArray(Array_index *ai, Indexbook *index)
   return;
 }
 
-int deleteArray(Array_index *ai, int bookId)
+int deleteArray(Array_index *ai, int bookId, Indexbook **indexdeleted)
 {
   int pos;
   Indexbook *index=NULL;
@@ -285,6 +197,8 @@ int deleteArray(Array_index *ai, int bookId)
   {
     return -1;
   }
+
+  *indexdeleted = index;
       
   memmove(ai->index_array+pos, ai->index_array+pos+1, (ai->used-pos)*sizeof(Indexbook *));
   ai->used--; 
@@ -310,6 +224,20 @@ void freeArray(Array_index *ai)
   return;
 }
 
+void printArray(Array_index *array){
+  int i;
+
+  printf("Size: %ld\n", array->size);
+  printf("Used: %ld\n", array->used);
+  printf("Index_array: (key, offset, size)\n");
+  for (i=0; i < array->used; i++){
+    printf("(%d, %ld, %ld)\n", array->index_array[i]->key, array->index_array[i]->offset, array->index_array[i]->size);
+  }
+  printf("\n");
+
+  return;
+}
+
 
 
 /********************************/
@@ -328,7 +256,7 @@ void add(Array_index *indexarray, char *index_file, int key, long int offset, si
 
   index = find_index_fromId(indexarray, key, 0, indexarray->used - 1, &pos);
   if(index != NULL){
-    fprintf(stdout, "Record with bookId=%d exists.\n", key);
+    fprintf(stdout, "Record with bookId=%d exists.\n\n", key);
     return;
   }
 
@@ -354,7 +282,7 @@ void find(Array_index *indexarray, char *index_file, int bookId){
 
   index = find_index_fromId(indexarray, bookId, 0, indexarray->used - 1, &pos);
   if(!index){
-    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
+    fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
     return;
   }
 
@@ -388,22 +316,26 @@ void find(Array_index *indexarray, char *index_file, int bookId){
 
 /* por terminar */
 void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId){
+  Indexdeletedbook *deleted = NULL;
+  Indexbook *index_delete = NULL;
 
-  if(!indexarray /*|| !indexdeletedarray*/ || !indexdeleted_file || bookId<0){
+  if(!indexarray || !indexdeletedarray || !indexdeleted_file || bookId<0){
     return;
   }
 
+  /* Se elimina de los índices */
+  if (deleteArray(indexarray, bookId, &index_delete) == -1){
+    fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
+    return;
+  }
+  
+  deleted = create_Indexdeleted(index_delete->offset, index_delete->size);
 
   /* FALTA ESCRIBIR EN EL REGISTRO */
-  /*insertArray(indexdeletedarray, index); /*Cambiar para array deleted*/
+  insertArrayDeleted(indexdeletedarray, deleted, BESTFIT);
+  /* SE ESTA LIBERANDO MEMORIA DE LOS ELIMINADOS ??? */
 
-  /* Se elimina del array de índices */
-  if (deleteArray(indexarray, bookId) == -1){
-    fprintf(stdout, "Record with bookId=%d does not exist\n", bookId);
-    return;
-  }
-
-  fprintf(stdout, "Record with bookId=%d has been deleted\n", bookId);
+  fprintf(stdout, "Record with bookId=%d has been deleted\n\n", bookId);
 
   return;
 }
