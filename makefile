@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -pedantic -ansi
 
 HEADERS = deleted.h index.h library.h
 EXE     = library
-OBJ     = $(EXE).o deleted.o index.o library.o
+OBJ     = $(EXE).o deleted.o index.o
 
 all: $(EXE)
 
@@ -27,3 +27,4 @@ run:
 valgrind:
 	@echo "Ejecutando valgrind..."
 	valgrind --leak-check=full ./$(EXE)
+
