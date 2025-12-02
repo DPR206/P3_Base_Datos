@@ -16,26 +16,26 @@ int main() {
     indexarray = initArray(2);
     deletedarray = initArrayDeleted(2);
 
+
     for (i=0; i<20; i++){
         if(i%2==0){
-            add(indexarray, index_file, i, (i+20), (i+30)%35, "12346|978-2-12345680-4|Hola|catedra");
+            add(indexarray, deletedarray, index_file, i, (i+30)%35, "12346|978-2-12345680-4|Hola|catedra", FIRSTFIT);
         }
     }
     for (i=1; i<20; i++){
         if(i%2==1){
-            add(indexarray, index_file, i, (i+20), (i+30)%35, "12346|978-2-12345680-4|Hola|catedra");
+            add(indexarray, deletedarray, index_file, i, (i+30)%35, "12346|978-2-12345680-4|Hola|catedra", FIRSTFIT);
         }
     }
-
+    
     printArray(indexarray);
     printArrayDeleted(deletedarray);
 
     for (i=0; i<20; i++){
         if(i%3==2){
-            del(indexarray, deletedarray, deleted_file, i);
+            del(indexarray, deletedarray, deleted_file, i, FIRSTFIT);
         }
     }
-    del(indexarray, deletedarray, deleted_file, 2);
 
     printArray(indexarray);
     printArrayDeleted(deletedarray);

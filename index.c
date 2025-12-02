@@ -246,27 +246,37 @@ void printArray(Array_index *array){
 
 
 
-void add(Array_index *indexarray, char *index_file, int key, long int offset, size_t size, char *info){
+void add(Array_index *indexarray, Array_indexdeleted *deletedarray, char *index_file, int key, size_t size, char *info, int mode){
   Indexbook *index = NULL;
   int pos;
+  size_t offset;
 
   if(!indexarray || !index_file || key < 0 || !info){
     return;
   }
 
+  /* Comprobar que no existe ya */
   index = find_index_fromId(indexarray, key, 0, indexarray->used - 1, &pos);
   if(index != NULL){
-    fprintf(stdout, "Record with bookId=%d exists.\n\n", key);
+    fprintf(stdout, "Record with bookId=%d exists\n\n", key);
     return;
   }
 
+  /* Encontrar donde insertarlo en el fichero */
+  findgapDeleted(deletedarray, size, &offset, mode);
+  /* AQUI ESTA EL PROBLEMA */
+  if(offset == -1){
+    offset = 0;
+  }
+  printf("offset: %ld\n", offset);
+
+  /* Crear nuevo indice y insertar en el array */
   index = create_Indexbook(key, offset, size);
   if(!index){
     return;
   }
   insertArray(indexarray, index);
-  
-  /* Escoger hueco y meter en el fichero */
+
   return;
 }
 
@@ -315,7 +325,7 @@ void find(Array_index *indexarray, char *index_file, int bookId){
 }
 
 /* por terminar */
-void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId){
+void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId, int mode){
   Indexdeletedbook *deleted = NULL;
   Indexbook *index_delete = NULL;
 
@@ -330,10 +340,14 @@ void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *i
   }
   
   deleted = create_Indexdeleted(index_delete->offset, index_delete->size);
+  if (!deleted){
+    return;
+  }
+
+  free_Indexbook(index_delete);
 
   /* FALTA ESCRIBIR EN EL REGISTRO */
-  insertArrayDeleted(indexdeletedarray, deleted, BESTFIT);
-  /* SE ESTA LIBERANDO MEMORIA DE LOS ELIMINADOS ??? */
+  insertArrayDeleted(indexdeletedarray, deleted, mode);
 
   fprintf(stdout, "Record with bookId=%d has been deleted\n\n", bookId);
 

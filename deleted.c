@@ -13,7 +13,7 @@
 Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size){
   Indexdeletedbook *new_index = NULL;
 
-  if (offset < 0 || size < 0)
+  if (size == 0)
   {
     return NULL;
   }
@@ -124,7 +124,7 @@ void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int 
 int deleteArrayDeleted(Array_indexdeleted *array, int bookId){ }
 
 void freeArrayDeleted(Array_indexdeleted *array){
-  int i;
+  size_t i;
 
   for (i = 0; i < array->used; i++)
   {
@@ -140,7 +140,7 @@ void freeArrayDeleted(Array_indexdeleted *array){
 }
 
 void printArrayDeleted(Array_indexdeleted *array){
-  int i;
+  size_t i;
 
   printf("Size: %ld\n", array->size);
   printf("Used: %ld\n", array->used);
@@ -154,16 +154,22 @@ void printArrayDeleted(Array_indexdeleted *array){
 }
 
 void findgapDeleted(Array_indexdeleted *array, size_t size, size_t *offset, int mode){
-  int i;
+  size_t i;
   int pos = -1;
   size_t newsize;
-  size_t bestSize = array->indexdeleted_array[0]->size;
+  size_t bestSize;
   
-  if (!array || size < 0 || !offset || mode < BESTFIT || mode > FIRSTFIT)
+  if (!array || size == 0 || !offset || mode < BESTFIT || mode > FIRSTFIT)
   {
     return;
   }
 
+  *offset = EOF;
+  if (array->used == 0){
+    return;
+  }
+
+  bestSize = array->indexdeleted_array[0]->size;
   if(mode == BESTFIT){
     for (i = 0; i < array->size; i++) {
       newsize = array->indexdeleted_array[i]->size;
@@ -196,9 +202,9 @@ void findgapDeleted(Array_indexdeleted *array, size_t size, size_t *offset, int 
   if(pos < 0){
     printf("No se ha podido encontrar hueco\n");
     return;
+  } else {
+    *offset = array->indexdeleted_array[pos]->offset;
   }
-
-  *offset = array->indexdeleted_array[pos]->offset;
 
   return;
 }
