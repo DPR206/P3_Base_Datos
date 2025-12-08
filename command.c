@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "command.h"
 
 void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t size, long int *offset, int mode){
@@ -79,6 +80,69 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
     }
   }
 
+  return;
+}
+
+void comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *findex, FILE *fdeleted, int mode){
+  int strategy;
+  char *info = NULL;
+  int key;
+  size_t offset, size;
+  char strkey[S_INT + 1], stroffset[S_SIZET + 1], strsize[S_SIZET + 1];
+
+  Indexbook *index = NULL;
+  Indexdeletedbook * deleted;
+
+  if(!indexarray || !deletedarray || !findex || !fdeleted) return;
+
+  fseek(findex, 0, SEEK_SET);
+  fseek(fdeleted, 0, SEEK_SET);
+
+  info = malloc(INDEXDATA_SIZE + 1);
+  if(!info) return;
+
+  while (fread(info, 1, INDEXDATA_SIZE, findex) == INDEXDATA_SIZE){
+
+    strncpy(strkey, info, S_INT);
+    strkey[S_INT] = '\0';
+    key = atoi(strkey);
+
+    strncpy(stroffset, info + S_INT, S_SIZET);
+    stroffset[S_SIZET] = '\0';
+    offset = atol(stroffset);
+
+    strncpy(strsize, info + S_INT + S_SIZET, S_SIZET);
+    strsize[S_SIZET] = '\0';
+    size = atol(strsize);
+
+    index = create_Indexbook(key, offset, size);
+    if(!index) return;
+
+    insertArray(indexarray, index);
+  }
+
+  if (fread(&strategy, 1, 1, fdeleted) != 1) {
+    free(info);
+    return;
+  }
+  while (fread(info, 1, DELETEDDATA_SIZE, fdeleted) == DELETEDDATA_SIZE) {
+
+    strncpy(stroffset, info, S_SIZET);
+    stroffset[S_SIZET] = '\0';
+    offset = atol(stroffset);
+
+    strncpy(strsize, info + S_SIZET, S_SIZET);
+    strsize[S_SIZET] = '\0';
+    size = atol(strsize);
+
+    deleted = create_Indexdeleted(offset, size);
+    if(!deleted) return;
+
+    insertArrayDeleted(deletedarray, deleted, mode);
+  }
+  printArray(indexarray);
+
+  free(info);
   return;
 }
 
@@ -220,10 +284,12 @@ void comand_del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, 
   return;
 }
 
-void comand_exit(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, FILE *fdata, FILE *findex, FILE *fdeleted){
+void comand_exit(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, FILE *fdata, FILE *findex, FILE *fdeleted, int mode){
   size_t i;
   char *toprint = NULL;
   size_t printed_size;
+
+  if(!indexarray || !indexdeletedarray || !fdata || !findex || !fdeleted) return;
 
   /* Cerrar el archivo de datos */
   fclose(fdata);
@@ -231,6 +297,16 @@ void comand_exit(Array_index *indexarray, Array_indexdeleted *indexdeletedarray,
   /* Guardar indices */
   toprint = malloc(INDEXDATA_SIZE + 1);
   if (!toprint) return;
+  
+  printed_size = snprintf(toprint, 2, "%*d", 1, mode);
+  if (printed_size != 1) {
+    free(toprint);
+    return;
+  }
+  if (printed_size != fwrite(toprint, 1, printed_size, fdeleted)) {
+    free(toprint);
+    return;
+  }
   for(i=0; i<indexarray->used; i++){
 
     /* Construir lo que se escribe en el archivo */

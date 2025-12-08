@@ -206,7 +206,6 @@ void freeArray(Array_index *ai)
 {
   long unsigned i;
 
-  printf("%ld\n", ai->used);
   for (i = 0; i < ai->used; i++)
   {
     if(ai->index_array[i]){

@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
     char *arg = NULL;
     Command code = UNKNOWN;
     int finished = 0;
+    int bookId;
 
     /* Comprobar numero argumentos */
     if(argc != 3){
@@ -74,6 +75,8 @@ int main(int argc, char *argv[]) {
         return ERR;
     }
 
+    comand_load(indexarray, deletedarray, findex, fdeleted, mode);
+
     /* Loop */
     while (fgets(line, sizeof(line), stdin) != NULL){
         line[strcspn(line, "\r\n")] = '\0';
@@ -105,20 +108,31 @@ int main(int argc, char *argv[]) {
 
         /* Ejecutar comando */
         switch (code) {
-            /* COMPROBAR QUE EXISTE EL ARG CUANDO SE NECESITE */
             case ADD:
+                if(!arg){
+                    printf("Introduce book information to add.\n");
+                    break;
+                }
                 comand_add(indexarray, deletedarray, fdata, arg, mode);
                 break;
             case FIND:
-                /* ARG ES UNA CADENA Y BOOK_ID UN NUMERO */
-                comand_find(indexarray, fdata, arg);
+                if(!arg){
+                    printf("Introduce bookId to find.\n");
+                    break;
+                }
+                bookId = atoi(arg);
+                comand_find(indexarray, fdata, bookId);
                 break;
             case DEL:
-                /* ARG ES UNA CADENA Y BOOK_ID UN NUMERO */
-                comand_del(indexarray, deletedarray, arg, mode);
+                if(!arg){
+                    printf("Introduce bookId to delete.\n");
+                    break;
+                }
+                bookId = atoi(arg);
+                comand_del(indexarray, deletedarray, bookId, mode);
                 break;
             case EXIT:
-                comand_exit(indexarray, deletedarray, fdata, findex, fdeleted);
+                comand_exit(indexarray, deletedarray, fdata, findex, fdeleted, mode);
                 finished = 1;
                 break;
             case PRINTIND:
