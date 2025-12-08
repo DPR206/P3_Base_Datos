@@ -3,46 +3,153 @@
 
 #include "library.h"
 
-#define N_CMD 6
-char *comand[N_CMD] = {"add", "find", "del", "exit", "printInd", "printLst"};
-
-int main() {
+int main(int argc, char *argv[]) {
     Array_index *indexarray = NULL;
     Array_indexdeleted *deletedarray = NULL;
-    char index_file[] = "index.txt";
-    char deleted_file[] = "deleted.txt";
-    int i;
 
-    indexarray = initArray(2);
-    deletedarray = initArrayDeleted(2);
+    int mode;
+    char data_name[MAX_LEN];
+    char index_name[MAX_LEN];
+    char deleted_name[MAX_LEN];
+    FILE *fdata = NULL, *fdeleted = NULL, *findex = NULL;
 
+    char line[MAX_LEN];
+    char *cmd = NULL;
+    char *arg = NULL;
+    Command code = UNKNOWN;
 
-    for (i=0; i<20; i++){
-        if(i%2==0){
-            add(indexarray, deletedarray, index_file, i, (i+30)%35, "12346|978-2-12345680-4|Hola|catedra", FIRSTFIT);
-        }
+    /* Comprobar numero argumentos */
+    if(argc != 3){
+        printf("Error: Input must be %s <strategy> <root>.\n", argv[0]);
+        return ERR;
     }
-    for (i=1; i<20; i++){
-        if(i%2==1){
-            add(indexarray, deletedarray, index_file, i, (i+30)%35, "12346|978-2-12345680-4|Hola|catedra", FIRSTFIT);
-        }
+
+    /* Seleccionar mode */
+    if (strcmp(argv[1], "best_fit") == 0) {
+        mode = BESTFIT;
+    }
+    else if (strcmp(argv[1], "first_fit") == 0) {
+        mode = FIRSTFIT;
+    }
+    else if (strcmp(argv[1], "worst_fit") == 0) {
+        mode = WORSTFIT;
+    }
+    else {
+        printf("Error: Invalid strategy. Use best_fit, first_fit o worst_fit.\n");
+        return ERR;
+    }
+
+    /* Seleccionar root */
+    snprintf(data_name,  sizeof(data_name),  "%s.db", argv[2]);
+    snprintf(index_name, sizeof(index_name), "%s.ind", argv[2]);
+    snprintf(deleted_name, sizeof(deleted_name), "%s.lst", argv[2]);
+
+    /* Abrir ficheros de datos */
+    fdata = fopen(data_name, "wb+"); /* CAMBIAR WB+ POR RB+ EN LA VERSION FINAL */
+    if(!fdata){
+        printf("Error: Couldn't open %s.\n", data_name);
+        return ERR;
+    }
+    findex = fopen(index_name, "wb+");
+    if(!findex){
+        printf("Error: Couldn't open %s.\n", index_name);
+        fclose(fdata);
+        return ERR;
+    }
+    fdeleted = fopen(deleted_name, "wb+");
+    if(!fdeleted){
+        printf("Error: Couldn't open %s.\n", deleted_name);
+        fclose(fdata);
+        fclose(findex);
+        return ERR;
     }
     
-    printArray(indexarray);
-    printArrayDeleted(deletedarray);
+    /* Inicializar arrays de indices y registros borrados */
+    indexarray = initArray(INIT_SIZE);
+    if(!indexarray){
+        fclose(fdata);
+        fclose(findex);
+        fclose(fdeleted);
+        return ERR;
+    }
+    deletedarray = initArrayDeleted(INIT_SIZE);
+    if(!deletedarray){
+        fclose(fdata);
+        fclose(findex);
+        fclose(fdeleted);
+        freeArray(indexarray);
+        free(indexarray);
+        return ERR;
+    }
 
-    for (i=0; i<20; i++){
-        if(i%3==2){
-            del(indexarray, deletedarray, deleted_file, i, FIRSTFIT);
+    /* Loop */
+    while (fgets(line, sizeof(line), stdin) != NULL){
+        line[strcspn(line, "\r\n")] = '\0';
+        if (line[0] == '\0') continue;
+
+        /* Recopilar comando y argumento */
+        cmd = strtok(line, " \t");
+        if (!cmd) continue;
+        arg = strtok(NULL, " \t");
+
+        /* Procesar comando */
+        if (strcmp(cmd, "add") == 0) {
+            code = ADD;
+        } else if (strcmp(cmd, "find") == 0) {
+            code = FIND;
+        } else if (strcmp(cmd, "del") == 0) {
+            code = DEL;
+        } else if (strcmp(cmd, "exit") == 0) {
+            code = EXIT;
+        } else if (strcmp(cmd, "printInd") == 0) {
+            code = PRINTIND;
+        } else if (strcmp(cmd, "printLst") == 0) {
+            code = PRINTLST;
+        } else if (strcmp(cmd, "printRec") == 0) {
+            code = PRINTREC;
+        } else {
+            code = UNKNOWN;
+        }
+
+        /* Ejecutar comando */
+        switch (code) {
+            /* COMPROBAR QUE EXISTE EL ARG CUANDO SE NECESITE */
+            case ADD:
+                comand_add(indexarray, deletedarray, fdata, arg, mode);
+                break;
+            case FIND:
+                /* ARG ES UNA CADENA Y BOOK_ID UN NUMERO */
+                comand_find(indexarray, fdata, arg);
+                break;
+            case DEL:
+                /* ARG ES UNA CADENA Y BOOK_ID UN NUMERO */
+                comand_del(indexarray, deletedarray, arg, mode);
+                break;
+            case EXIT:
+                comand_exit(indexarray, deletedarray, fdata, findex, fdeleted);
+                break;
+            case PRINTIND:
+                comand_printInd(indexarray);
+                break;
+            case PRINTLST:
+                comand_printLst(deletedarray);
+                break;
+            case PRINTREC:
+                comand_printRec(indexarray, fdata);
+                break;
+            case UNKNOWN:
+                break;
         }
     }
 
-    printArray(indexarray);
-    printArrayDeleted(deletedarray);
+
+    fclose(fdata);
+    fclose(fdeleted);
 
     freeArrayDeleted(deletedarray);
     free(deletedarray);
     freeArray(indexarray);
     free(indexarray);
-    return 0;
+
+    return OK;
 }

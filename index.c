@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "index.h"
-#include "deleted.h"
 
 
 /********************************/
@@ -16,7 +11,7 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
 {
   Indexbook *new_index = NULL;
 
-  if (key < 0 || offset < 0 || size < 0)
+  if (key < 0 || offset < 0 || size == 0)
   {
     return NULL;
   }
@@ -138,7 +133,6 @@ Array_index *initArray(size_t initialSize)
 
 void insertArray(Array_index *ai, Indexbook *index)
 {
-  int i;
   int pos;
   int first, last, middle;
   Indexbook **tmp;
@@ -157,6 +151,7 @@ void insertArray(Array_index *ai, Indexbook *index)
     ai->index_array = tmp;
   }
 
+  /* Se inserta ordenado utilizando bbin */
   if (ai->used == 0){
     pos = 0;
   } else {
@@ -209,7 +204,7 @@ int deleteArray(Array_index *ai, int bookId, Indexbook **indexdeleted)
 
 void freeArray(Array_index *ai)
 {
-  int i;
+  long unsigned i;
 
   for (i = 0; i < ai->used; i++)
   {
@@ -225,7 +220,7 @@ void freeArray(Array_index *ai)
 }
 
 void printArray(Array_index *array){
-  int i;
+  long unsigned i;
 
   printf("Size: %ld\n", array->size);
   printf("Used: %ld\n", array->used);
@@ -234,122 +229,6 @@ void printArray(Array_index *array){
     printf("(%d, %ld, %ld)\n", array->index_array[i]->key, array->index_array[i]->offset, array->index_array[i]->size);
   }
   printf("\n");
-
-  return;
-}
-
-
-
-/********************************/
-/*     COMANDOS PRINCIPALES     */
-/********************************/
-
-
-
-void add(Array_index *indexarray, Array_indexdeleted *deletedarray, char *index_file, int key, size_t size, char *info, int mode){
-  Indexbook *index = NULL;
-  int pos;
-  size_t offset;
-
-  if(!indexarray || !index_file || key < 0 || !info){
-    return;
-  }
-
-  /* Comprobar que no existe ya */
-  index = find_index_fromId(indexarray, key, 0, indexarray->used - 1, &pos);
-  if(index != NULL){
-    fprintf(stdout, "Record with bookId=%d exists\n\n", key);
-    return;
-  }
-
-  /* Encontrar donde insertarlo en el fichero */
-  findgapDeleted(deletedarray, size, &offset, mode);
-  /* AQUI ESTA EL PROBLEMA */
-  if(offset == -1){
-    offset = 0;
-  }
-  printf("offset: %ld\n", offset);
-
-  /* Crear nuevo indice y insertar en el array */
-  index = create_Indexbook(key, offset, size);
-  if(!index){
-    return;
-  }
-  insertArray(indexarray, index);
-
-  return;
-}
-
-void find(Array_index *indexarray, char *index_file, int bookId){
-  Indexbook *index=NULL;
-  int pos=0;
-  FILE *flibrary = NULL;
-  char *info = NULL;
-
-  if(!indexarray || !index_file || bookId<0){
-    return;
-  }
-
-  index = find_index_fromId(indexarray, bookId, 0, indexarray->used - 1, &pos);
-  if(!index){
-    fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
-    return;
-  }
-
-  flibrary = fopen(index_file, "rb+");
-  if(!flibrary){
-    return;
-  }
-
-  info = malloc(index->size + 1); 
-  if (!info) {
-    fclose(flibrary);
-    return;
-  }
-
-  fseek(flibrary, pos, SEEK_SET);
-  if (fread(info, index->size, 1, flibrary) < 1){
-    fclose(flibrary);
-    free(info);
-    return;
-  }
-  fclose(flibrary);
-
-  info[index->size] = '\0';
-
-  fprintf(stdout, "%s\n", info);
-
-  free(info);
-  free_Indexbook(index);
-  return;
-}
-
-/* por terminar */
-void del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, char *indexdeleted_file, int bookId, int mode){
-  Indexdeletedbook *deleted = NULL;
-  Indexbook *index_delete = NULL;
-
-  if(!indexarray || !indexdeletedarray || !indexdeleted_file || bookId<0){
-    return;
-  }
-
-  /* Se elimina de los índices */
-  if (deleteArray(indexarray, bookId, &index_delete) == -1){
-    fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
-    return;
-  }
-  
-  deleted = create_Indexdeleted(index_delete->offset, index_delete->size);
-  if (!deleted){
-    return;
-  }
-
-  free_Indexbook(index_delete);
-
-  /* FALTA ESCRIBIR EN EL REGISTRO */
-  insertArrayDeleted(indexdeletedarray, deleted, mode);
-
-  fprintf(stdout, "Record with bookId=%d has been deleted\n\n", bookId);
 
   return;
 }

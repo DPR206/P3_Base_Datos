@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 typedef struct
 {
-  int key; /*book isbn*/
-  long int offset; /*book is stored in disk in this position*/
+  int key; /*book id*/
+  size_t offset; /*book is stored in disk in this position*/
   size_t size; /*book recorded size. This is a redundant field that helps in the implementation*/
 } Indexbook;
 

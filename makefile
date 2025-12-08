@@ -1,9 +1,9 @@
 CC = gcc -g
 CFLAGS = -Wall -Wextra -pedantic -ansi
 
-HEADERS = deleted.h index.h library.h
+HEADERS = deleted.h index.h command.h library.h
 EXE     = library
-OBJ     = $(EXE).o deleted.o index.o
+OBJ     = $(EXE).o deleted.o index.o command.o
 
 all: $(EXE)
 
@@ -22,9 +22,8 @@ clean:
 
 run:
 	@echo "Ejecutando programa..."
-	./$(EXE)
+	./$(EXE) first_fit test
 
 valgrind:
 	@echo "Ejecutando valgrind..."
 	valgrind --leak-check=full ./$(EXE)
-

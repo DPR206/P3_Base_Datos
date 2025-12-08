@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "deleted.h"
 
 /********************************/
@@ -54,7 +50,7 @@ Array_indexdeleted *initArrayDeleted(size_t initialSize){
   
   new = (Array_indexdeleted *)calloc(1, sizeof(Array_indexdeleted));
 
-  /*Create initial empty array of size initialSize*/
+  /* Create initial empty array of size initialSize */
   new->indexdeleted_array = (Indexdeletedbook **)calloc(initialSize, sizeof(Indexdeletedbook *));
   if (!new->indexdeleted_array)
   {
@@ -121,8 +117,6 @@ void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int 
   return;
 }
 
-int deleteArrayDeleted(Array_indexdeleted *array, int bookId){ }
-
 void freeArrayDeleted(Array_indexdeleted *array){
   size_t i;
 
@@ -131,7 +125,7 @@ void freeArrayDeleted(Array_indexdeleted *array){
     free_Indexdeleted(array->indexdeleted_array[i]);
   }
   
-  /*Free allocated memory for the array*/
+  /* Free allocated memory for the array */
   free(array->indexdeleted_array);
   array->indexdeleted_array = NULL;
   array->used = array->size = 0;
@@ -149,62 +143,6 @@ void printArrayDeleted(Array_indexdeleted *array){
     printf("(%ld, %ld)\n", array->indexdeleted_array[i]->offset, array->indexdeleted_array[i]->size);
   }
   printf("\n");
-
-  return;
-}
-
-void findgapDeleted(Array_indexdeleted *array, size_t size, size_t *offset, int mode){
-  size_t i;
-  int pos = -1;
-  size_t newsize;
-  size_t bestSize;
-  
-  if (!array || size == 0 || !offset || mode < BESTFIT || mode > FIRSTFIT)
-  {
-    return;
-  }
-
-  *offset = EOF;
-  if (array->used == 0){
-    return;
-  }
-
-  bestSize = array->indexdeleted_array[0]->size;
-  if(mode == BESTFIT){
-    for (i = 0; i < array->size; i++) {
-      newsize = array->indexdeleted_array[i]->size;
-
-      if (newsize >= size + HEADER && newsize < bestSize) {
-        bestSize = newsize;
-        pos = i;
-      }
-    }
-
-  } else if (mode == WORSTFIT){
-    if(size + HEADER <= array->indexdeleted_array[array->used - 1]->size){
-      pos = array->used - 1;
-    }
-
-  } else if (mode == FIRSTFIT){
-    for (i = 0; i < array->size; i++) {
-      newsize = array->indexdeleted_array[i]->size;
-      
-      if (newsize >= size + HEADER) {
-        pos = i;
-        break;
-      }
-    }
-
-  } else {
-    return;
-  }
-
-  if(pos < 0){
-    printf("No se ha podido encontrar hueco\n");
-    return;
-  } else {
-    *offset = array->indexdeleted_array[pos]->offset;
-  }
 
   return;
 }
