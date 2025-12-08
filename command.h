@@ -5,6 +5,11 @@
 #include "deleted.h"
 
 #define MAX_LEN 256
+#define INDEXDATA_SIZE 20
+#define DELETEDDATA_SIZE 16
+
+#define S_SIZET 8
+#define S_INT 4
 
 void comand_add(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *fdata, char *info, int mode);
 void comand_find(Array_index *indexarray, FILE *fdata, int bookId);

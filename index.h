@@ -5,9 +5,9 @@
 
 typedef struct
 {
-  int key; /*book id*/
-  size_t offset; /*book is stored in disk in this position*/
-  size_t size; /*book recorded size. This is a redundant field that helps in the implementation*/
+  int key; /* 4 bytes*/
+  size_t offset; /* 8 bytes */
+  size_t size; /* 8 bytes */
 } Indexbook;
 
 typedef struct

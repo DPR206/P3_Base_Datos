@@ -26,4 +26,4 @@ run:
 
 valgrind:
 	@echo "Ejecutando valgrind..."
-	valgrind --leak-check=full ./$(EXE)
+	valgrind --leak-check=full ./$(EXE) first_fit test

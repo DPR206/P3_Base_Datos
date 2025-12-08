@@ -122,13 +122,14 @@ void freeArrayDeleted(Array_indexdeleted *array){
 
   for (i = 0; i < array->used; i++)
   {
-    free_Indexdeleted(array->indexdeleted_array[i]);
+    if(array->indexdeleted_array[i]){
+      free_Indexdeleted(array->indexdeleted_array[i]);
+    }
   }
   
   /* Free allocated memory for the array */
   free(array->indexdeleted_array);
-  array->indexdeleted_array = NULL;
-  array->used = array->size = 0;
+  free(array);
 
   return;
 }

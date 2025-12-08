@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
     char *cmd = NULL;
     char *arg = NULL;
     Command code = UNKNOWN;
+    int finished = 0;
 
     /* Comprobar numero argumentos */
     if(argc != 3){
@@ -45,22 +46,14 @@ int main(int argc, char *argv[]) {
     snprintf(deleted_name, sizeof(deleted_name), "%s.lst", argv[2]);
 
     /* Abrir ficheros de datos */
-    fdata = fopen(data_name, "wb+"); /* CAMBIAR WB+ POR RB+ EN LA VERSION FINAL */
-    if(!fdata){
-        printf("Error: Couldn't open %s.\n", data_name);
-        return ERR;
-    }
-    findex = fopen(index_name, "wb+");
-    if(!findex){
-        printf("Error: Couldn't open %s.\n", index_name);
-        fclose(fdata);
-        return ERR;
-    }
-    fdeleted = fopen(deleted_name, "wb+");
-    if(!fdeleted){
-        printf("Error: Couldn't open %s.\n", deleted_name);
-        fclose(fdata);
-        fclose(findex);
+    fdata = fopen(data_name, "rb+");
+    if(!fdata) fdata = fopen(data_name, "wb+");
+    findex = fopen(index_name, "rb+");
+    if(!findex) findex = fopen(index_name, "wb+");
+    fdeleted = fopen(deleted_name, "rb+");
+    if(!fdeleted) fdeleted = fopen(deleted_name, "wb+");
+    if(!fdata || !findex || !fdeleted){
+        printf("Error: couldn't open one of the files.\n");
         return ERR;
     }
     
@@ -78,7 +71,6 @@ int main(int argc, char *argv[]) {
         fclose(findex);
         fclose(fdeleted);
         freeArray(indexarray);
-        free(indexarray);
         return ERR;
     }
 
@@ -127,6 +119,7 @@ int main(int argc, char *argv[]) {
                 break;
             case EXIT:
                 comand_exit(indexarray, deletedarray, fdata, findex, fdeleted);
+                finished = 1;
                 break;
             case PRINTIND:
                 comand_printInd(indexarray);
@@ -140,16 +133,11 @@ int main(int argc, char *argv[]) {
             case UNKNOWN:
                 break;
         }
+
+        if(finished == 1){
+            break;
+        }
     }
-
-
-    fclose(fdata);
-    fclose(fdeleted);
-
-    freeArrayDeleted(deletedarray);
-    free(deletedarray);
-    freeArray(indexarray);
-    free(indexarray);
 
     return OK;
 }

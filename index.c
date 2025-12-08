@@ -206,15 +206,17 @@ void freeArray(Array_index *ai)
 {
   long unsigned i;
 
+  printf("%ld\n", ai->used);
   for (i = 0; i < ai->used; i++)
   {
-    free_Indexbook(ai->index_array[i]);
+    if(ai->index_array[i]){
+      free_Indexbook(ai->index_array[i]);
+    }
   }
   
   /*Free allocated memory for the array*/
   free(ai->index_array);
-  ai->index_array = NULL;
-  ai->used = ai->size = 0;
+  free(ai);
 
   return;
 }

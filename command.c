@@ -7,7 +7,7 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
   size_t newsize, newoffset;
   Indexdeletedbook *newdeleted = NULL;
   
-  if (!indexarray || !array | !offset || mode < BESTFIT || mode > FIRSTFIT)
+  if (!indexarray || !array || !offset || mode < BESTFIT || mode > FIRSTFIT)
   {
     return;
   }
@@ -70,7 +70,7 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
     }
 
     /* Insertar nuevo hueco que sobra */
-    if(newsize > 8) {
+    if(newsize > HEADER) {
       newdeleted = create_Indexdeleted(newoffset, newsize - HEADER);
       if(!newdeleted){
         return;
@@ -221,7 +221,55 @@ void comand_del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, 
 }
 
 void comand_exit(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, FILE *fdata, FILE *findex, FILE *fdeleted){
+  size_t i;
+  char *toprint = NULL;
+  size_t printed_size;
 
+  /* Cerrar el archivo de datos */
+  fclose(fdata);
+
+  /* Guardar indices */
+  toprint = malloc(INDEXDATA_SIZE + 1);
+  if (!toprint) return;
+  for(i=0; i<indexarray->used; i++){
+
+    /* Construir lo que se escribe en el archivo */
+    printed_size = snprintf(toprint, INDEXDATA_SIZE + 1, "%*d%*ld%*ld", S_INT, indexarray->index_array[i]->key, S_SIZET, indexarray->index_array[i]->offset, S_SIZET, indexarray->index_array[i]->size);
+    if (printed_size != INDEXDATA_SIZE) {
+      free(toprint);
+      return;
+    }
+
+    /* Escribir en archivo */
+    if (printed_size != fwrite(toprint, 1, printed_size, findex)) {
+      free(toprint);
+      return;
+    }
+  }
+  freeArray(indexarray);
+  fclose(findex);
+
+  /* Guardar deleted */
+  for(i=0; i<indexdeletedarray->used; i++){
+
+    /* Construir lo que se escribe en el archivo */
+    printed_size = snprintf(toprint, DELETEDDATA_SIZE + 1, "%*ld%*ld", S_SIZET, indexdeletedarray->indexdeleted_array[i]->offset, S_SIZET, indexdeletedarray->indexdeleted_array[i]->size);
+    if (printed_size != DELETEDDATA_SIZE) {
+      free(toprint);
+      return;
+    }
+
+    /* Escribir en archivo */
+    if (printed_size != fwrite(toprint, 1, printed_size, fdeleted)) {
+      free(toprint);
+      return;
+    }
+  }
+  freeArrayDeleted(indexdeletedarray);
+  fclose(fdeleted);
+
+  free(toprint);
+  return;
 }
 
 void comand_printInd(Array_index *indexarray){
