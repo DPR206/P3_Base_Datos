@@ -1,22 +1,21 @@
 #include <stdio.h>
 #include "command.h"
 
-void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t size, long int *offset, int mode){
+Status findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t size, long int *offset, int mode){
   size_t i;
   int pos = -1;
   size_t bestsize;
   size_t newsize, newoffset;
   Indexdeletedbook *newdeleted = NULL;
   
-  if (!indexarray || !array || !offset || mode < BESTFIT || mode > FIRSTFIT)
-  {
-    return;
-  }
+  if (!indexarray || !indexarray->index_array || !array || !array->indexdeleted_array) return ERR;
+  if (size == 0 || !offset) return ERR;
+  if(mode < BESTFIT || mode > FIRSTFIT) return ERR;
 
   /* Si no existen huecos (registros borrados)*/
   if (array->used == 0){
     *offset = EOF;
-    return;
+    return OK;
   }
 
   /* Busca donde insertar entre los huecos de borrados */
@@ -33,7 +32,7 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
 
   /* WORSTFIT */
   } else if (mode == WORSTFIT){
-    if(size <= array->indexdeleted_array[array->used - 1]->size){
+    if(size <= array->indexdeleted_array[0]->size){
       pos = array->used - 1;
     }
 
@@ -49,7 +48,7 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
     }
 
   } else {
-    return;
+    return ERR;
   }
 
   /* No ha encontrado un hueco donde insertar */
@@ -74,76 +73,65 @@ void findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t s
     if(newsize > HEADER) {
       newdeleted = create_Indexdeleted(newoffset, newsize - HEADER);
       if(!newdeleted){
-        return;
+        return ERR;
       }
-      insertArrayDeleted(array, newdeleted, mode);
+      if(insertArrayDeleted(array, newdeleted, mode) == ERR){
+        free_Indexdeleted(newdeleted);
+        return ERR;
+      }
     }
   }
 
-  return;
+  return OK;
 }
 
-void comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *findex, FILE *fdeleted, int mode){
+Status comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *findex, FILE *fdeleted, int mode){
   int strategy;
-  char *info = NULL;
   int key;
   size_t offset, size;
-  char strkey[S_INT + 1], stroffset[S_SIZET + 1], strsize[S_SIZET + 1];
 
   Indexbook *index = NULL;
   Indexdeletedbook * deleted;
 
-  if(!indexarray || !deletedarray || !findex || !fdeleted) return;
+  if(!indexarray || !indexarray->index_array || !deletedarray || !deletedarray->indexdeleted_array) return ERR;
+  if(!findex || !fdeleted) return ERR;
+  if(mode < BESTFIT || mode > FIRSTFIT) return ERR;
 
   fseek(findex, 0, SEEK_SET);
   fseek(fdeleted, 0, SEEK_SET);
 
-  info = malloc(INDEXDATA_SIZE + 1);
-  if(!info) return;
-
-  while (fread(info, 1, INDEXDATA_SIZE, findex) == INDEXDATA_SIZE){
-
-    strncpy(strkey, info, S_INT);
-    strkey[S_INT] = '\0';
-    key = atoi(strkey);
-
-    strncpy(stroffset, info + S_INT, S_SIZET);
-    stroffset[S_SIZET] = '\0';
-    offset = atol(stroffset);
-
-    strncpy(strsize, info + S_INT + S_SIZET, S_SIZET);
-    strsize[S_SIZET] = '\0';
-    size = atol(strsize);
+  while (1){
+    if(fread(&key, S_INT, 1, findex) != 1) break;
+    if(fread(&offset, S_SIZET, 1, findex) != 1) break;
+    if(fread(&size, S_SIZET, 1, findex) != 1) break;
 
     index = create_Indexbook(key, offset, size);
-    if(!index) return;
+    if(!index) return ERR;
 
-    insertArray(indexarray, index);
+    if(insertArray(indexarray, index) == ERR){
+      free_Indexbook(index);
+      return ERR;
+    }
   }
 
-  if (fread(&strategy, 1, 1, fdeleted) != 1) {
-    free(info);
-    return;
+  if (fread(&strategy, S_INT, 1, fdeleted) != 1) {
+    return OK;
   }
-  while (fread(info, 1, DELETEDDATA_SIZE, fdeleted) == DELETEDDATA_SIZE) {
+  while (1) {
 
-    strncpy(stroffset, info, S_SIZET);
-    stroffset[S_SIZET] = '\0';
-    offset = atol(stroffset);
-
-    strncpy(strsize, info + S_SIZET, S_SIZET);
-    strsize[S_SIZET] = '\0';
-    size = atol(strsize);
+    if(fread(&offset, S_SIZET, 1, fdeleted) != 1) break;
+    if(fread(&size, S_SIZET, 1, fdeleted) != 1) break;
 
     deleted = create_Indexdeleted(offset, size);
-    if(!deleted) return;
+    if(!deleted) return ERR;
 
-    insertArrayDeleted(deletedarray, deleted, mode);
+    if(insertArrayDeleted(deletedarray, deleted, mode) == ERR){
+      free_Indexdeleted(deleted);
+      return ERR;
+    }
   }
-  printArray(indexarray);
 
-  free(info);
-  return;
+  return OK;
 }
 
 
@@ -154,33 +142,71 @@ void comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE
 
 
 
-void comand_add(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *fdata, char *info, int mode){
+Status comand_add(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE *fdata, char *info, int mode){
   Indexbook *index = NULL;
   int pos;
 
   int key;
-  char *tkey;
+  char isbn[ISBN + 1];
+  char title[MAX_LEN];
+  char editorial[MAX_LEN];
+  char barra = '|';
+  char *toks;
+  size_t infosize;
+  size_t titlesize;
+  size_t editorialsize;
+
   size_t size;
   long int offset;
-  size_t printed_size;
-  char *toprint = NULL;
+  size_t printed_size = 0;
 
-  if(!indexarray || !deletedarray || !fdata || !info) return;
-  if(mode < 0 || mode > 2) return;
+  if(!indexarray || !indexarray->index_array || !deletedarray || !deletedarray->indexdeleted_array) return ERR;
+  if(!fdata || !info) return ERR;
+  if(mode < BESTFIT || mode > FIRSTFIT) return ERR;
 
-  /* Comprobar que no existe */
-  size = strlen(info);
-  tkey = strtok(info, "|");
-  info = strtok(NULL, "|");
-  key = atoi(tkey);
-  index = find_index_fromId(indexarray, key, 0, indexarray->used - 1, &pos);
-  if(index != NULL){
-    fprintf(stdout, "Record with bookId=%d exists\n\n", key);
-    return;
+  /* Comprobar la cadena que se manda es correcta */
+  infosize = strlen(info);
+  if(infosize == 0){
+    return ERR;
+  }
+  /* Cargar los campos del libro */
+  toks = strtok(info, "|");
+  key = atoi(toks);
+
+  toks = strtok(NULL, "|");
+  if(toks != NULL){
+    strcpy(isbn, toks);
+  } else {
+    return ERR;
   }
 
+  toks = strtok(NULL, "|");
+  if(toks != NULL){
+    strcpy(title, toks);
+  } else {
+    return ERR;
+  }
+
+  toks = strtok(NULL, "|");
+  if(toks != NULL){
+    strcpy(editorial, toks);
+  } else {
+    return ERR;
+  }
+
+  /* Comprobar que el libro no existe */
+  index = find_index_fromId(indexarray, key, 0, indexarray->used - 1, &pos);
+  if(index != NULL){
+    fprintf(stdout, "Record with bookId=%d exists\n", key);
+    return OK;
+  }
+
+  titlesize = strlen(title);
+  editorialsize = strlen(editorial);
+  size = S_INT + ISBN + titlesize + 1 + editorialsize;
+
   /* Encontrar donde insertarlo en el fichero */
-  findgapDeleted(indexarray, deletedarray, size, &offset, mode);
+  if(findgapDeleted(indexarray, deletedarray, size, &offset, mode) == ERR) return ERR;
 
   /* Ir a la posicion donde escribir */
   if(offset == EOF){
@@ -190,194 +216,166 @@ void comand_add(Array_index *indexarray, Array_indexdeleted *deletedarray, FILE 
     fseek(fdata, offset, SEEK_SET);
   }
 
-  /* Reservar memoria para lo que vamos a imprimir */
-  /* tamaño = HEADER + size */
-  toprint = malloc(size + HEADER + 1);
-  if (!toprint) return;
-
-  /* Construir lo que irá al archivo */
-  printed_size = snprintf(toprint, size + HEADER + 1, "%*d%s|%s", HEADER, (int)size, tkey, info);
-  if (printed_size < HEADER) {
-    free(toprint);
-    return;
-  }
-
   /* Escribir en archivo */
-  if (printed_size != fwrite(toprint, 1, printed_size, fdata)) {
-    free(toprint);
-    return;
-  }
+  printed_size += fwrite(&size, HEADER, 1, fdata);
+  printed_size += fwrite(&key, S_INT, 1, fdata);
+  printed_size += fwrite(isbn, 1, ISBN, fdata);
+  printed_size += fwrite(title, 1, titlesize, fdata);
+  printed_size += fwrite(&barra, 1, 1, fdata);
+  printed_size += fwrite(editorial, 1, editorialsize, fdata);
 
-  free(toprint);
+  if(printed_size == 0){
+    return ERR;
+  }
 
   /* Crear nuevo indice e insertar en el array */
   index = create_Indexbook(key, offset, size);
-  if(!index){
-    return;
-  }
-  insertArray(indexarray, index);
+  if(!index) return ERR;
 
-  return;
+  if(insertArray(indexarray, index) == ERR){
+    free_Indexbook(index);
+    return ERR;
+  }
+
+  fprintf(stdout, "Record with BookID=%d has been added to the database\n", key);
+
+  return OK;
 }
 
-void comand_find(Array_index *indexarray, FILE *fdata, int bookId){
+Status comand_find(Array_index *indexarray, FILE *fdata, int bookId){
   Indexbook *index=NULL;
   int pos=0;
-  char *info = NULL;
+  int key;
+  size_t bookSize;
+  char isbn[ISBN + 1], book[MAX_LEN]; 
 
-  if(!indexarray || !fdata || bookId<0){
-    return;
-  }
+  if(!indexarray || !indexarray->index_array || !fdata || bookId<0) return ERR;
 
   /* Busca el indice si existe */
   index = find_index_fromId(indexarray, bookId, 0, indexarray->used - 1, &pos);
   if(!index){
     fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
-    return;
-  }
-
-  /* Reservar memoria para cadena de informacion */
-  info = malloc(index->size + 1); 
-  if (!info) {
-    return;
+    return OK;
   }
 
   /* Leer la informacion desde la posicion */
   fseek(fdata, index->offset + HEADER, SEEK_SET);
-  if (fread(info, index->size, 1, fdata) < 1){
-    free(info);
-    return;
-  }
-  info[index->size] = '\0';
+  if (fread(&key, S_INT, 1, fdata) != 1) return ERR;
+  if (fread(isbn, ISBN, 1, fdata) != 1) return ERR;
+  isbn[ISBN] = '\0';
+  bookSize = index->size - S_INT - ISBN;
+  if (fread(book, bookSize, 1, fdata) != 1) return ERR;
+  book[bookSize] = '\0';
 
   /* Imprimir mensaje */
-  fprintf(stdout, "%s\n", info);
+  fprintf(stdout, "%d|%s|%s\n", key, isbn, book);
 
-  free(info);
-  return;
+  return OK;
 }
 
-void comand_del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, int bookId, int mode){
+Status comand_del(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, int bookId, int mode){
   Indexdeletedbook *deleted = NULL;
   Indexbook *index_delete = NULL;
 
-  if(!indexarray || !indexdeletedarray || bookId<0) return;
-  if(mode < 0 || mode > 2) return;
+  if(!indexarray || !indexarray->index_array || !indexdeletedarray || !indexdeletedarray->indexdeleted_array || bookId<0) return ERR;
+  if(mode < BESTFIT || mode > FIRSTFIT) return ERR;
 
   /* Se elimina de los índices */
-  if (deleteArray(indexarray, bookId, &index_delete) == -1){
-    fprintf(stdout, "Record with bookId=%d does not exist\n\n", bookId);
-    return;
+  if (deleteArray(indexarray, bookId, &index_delete) == ERR){
+    fprintf(stdout, "Item with key %d does not exist\n", bookId);
+    return OK;
   }
   
   /* Se crea un indexdeleted con el hueco que deja este */
   deleted = create_Indexdeleted(index_delete->offset, index_delete->size);
   if (!deleted){
-    return;
+    return ERR;
   }
-  insertArrayDeleted(indexdeletedarray, deleted, mode);
+  if(insertArrayDeleted(indexdeletedarray, deleted, mode) == ERR){
+    free_Indexdeleted(deleted);
+    return ERR;
+  }
 
   /* Se libera memoria del indice eliminado */
   free_Indexbook(index_delete);
-  fprintf(stdout, "Record with bookId=%d has been deleted\n\n", bookId);
+  fprintf(stdout, "Record with BookID=%d has been deleted\n", bookId);
 
-  return;
+  return OK;
 }
 
 void comand_exit(Array_index *indexarray, Array_indexdeleted *indexdeletedarray, FILE *fdata, FILE *findex, FILE *fdeleted, int mode){
   size_t i;
-  char *toprint = NULL;
-  size_t printed_size;
+  size_t printed_size = 0;
 
-  if(!indexarray || !indexdeletedarray || !fdata || !findex || !fdeleted) return;
+  if(!indexarray || !indexdeletedarray || !indexarray->index_array || !indexdeletedarray->indexdeleted_array) return;
+  if(!fdata || !findex || !fdeleted) return;
+  if(mode < BESTFIT || mode > FIRSTFIT) return;
 
   /* Cerrar el archivo de datos */
   fclose(fdata);
+  
+  fseek(findex, 0, SEEK_SET);
+  fseek(fdeleted, 0, SEEK_SET);
 
   /* Guardar indices */
-  toprint = malloc(INDEXDATA_SIZE + 1);
-  if (!toprint) return;
-  
-  printed_size = snprintf(toprint, 2, "%*d", 1, mode);
-  if (printed_size != 1) {
-    free(toprint);
-    return;
-  }
-  if (printed_size != fwrite(toprint, 1, printed_size, fdeleted)) {
-    free(toprint);
-    return;
-  }
   for(i=0; i<indexarray->used; i++){
-
-    /* Construir lo que se escribe en el archivo */
-    printed_size = snprintf(toprint, INDEXDATA_SIZE + 1, "%*d%*ld%*ld", S_INT, indexarray->index_array[i]->key, S_SIZET, indexarray->index_array[i]->offset, S_SIZET, indexarray->index_array[i]->size);
-    if (printed_size != INDEXDATA_SIZE) {
-      free(toprint);
-      return;
-    }
-
+    
     /* Escribir en archivo */
-    if (printed_size != fwrite(toprint, 1, printed_size, findex)) {
-      free(toprint);
-      return;
-    }
+    printed_size += fwrite(&indexarray->index_array[i]->key, S_INT, 1, findex);
+    printed_size += fwrite(&indexarray->index_array[i]->offset, S_SIZET, 1, findex);
+    printed_size += fwrite(&indexarray->index_array[i]->size, S_SIZET, 1, findex);
+
+    if (printed_size == 0) return;
   }
   freeArray(indexarray);
   fclose(findex);
 
   /* Guardar deleted */
+  printed_size += fwrite(&mode, S_INT, 1, fdeleted);
   for(i=0; i<indexdeletedarray->used; i++){
 
-    /* Construir lo que se escribe en el archivo */
-    printed_size = snprintf(toprint, DELETEDDATA_SIZE + 1, "%*ld%*ld", S_SIZET, indexdeletedarray->indexdeleted_array[i]->offset, S_SIZET, indexdeletedarray->indexdeleted_array[i]->size);
-    if (printed_size != DELETEDDATA_SIZE) {
-      free(toprint);
-      return;
-    }
-
     /* Escribir en archivo */
-    if (printed_size != fwrite(toprint, 1, printed_size, fdeleted)) {
-      free(toprint);
-      return;
-    }
+    printed_size += fwrite(&indexdeletedarray->indexdeleted_array[i]->offset, S_SIZET, 1, fdeleted);
+    printed_size += fwrite(&indexdeletedarray->indexdeleted_array[i]->size, S_SIZET, 1, fdeleted);
+
+    if (printed_size == 0) return;
   }
   freeArrayDeleted(indexdeletedarray);
   fclose(fdeleted);
 
-  free(toprint);
   return;
 }
 
-void comand_printInd(Array_index *indexarray){
+Status comand_printInd(Array_index *indexarray){
   long unsigned i;
-  if(!indexarray || !indexarray->index_array) return;
+  if(!indexarray || !indexarray->index_array) return ERR;
 
   for (i=0; i < indexarray->used; i++){
-    fprintf(stdout, "Entry: #%ld\n", i);
+    fprintf(stdout, "Entry #%ld\n", i);
     fprintf(stdout, "    key: #%d\n    offset: #%ld\n    size: #%ld\n", indexarray->index_array[i]->key, indexarray->index_array[i]->offset, indexarray->index_array[i]->size);
   }
-  return;
+  return OK;
 }
 
-void comand_printLst(Array_indexdeleted *deletedarray){
+Status comand_printLst(Array_indexdeleted *deletedarray){
   long unsigned i;
-  if(!deletedarray || !deletedarray->indexdeleted_array) return;
+  if(!deletedarray || !deletedarray->indexdeleted_array) return ERR;
 
   for (i=0; i < deletedarray->used; i++){
-    fprintf(stdout, "Entry: #%ld\n", i);
+    fprintf(stdout, "Entry #%ld\n", i);
     fprintf(stdout, "    offset: #%ld\n    size: #%ld\n", deletedarray->indexdeleted_array[i]->offset, deletedarray->indexdeleted_array[i]->size);
   }
-  return;
+  return OK;
 }
 
-void comand_printRec(Array_index *indexarray, FILE *fdata){
+Status comand_printRec(Array_index *indexarray, FILE *fdata){
   long unsigned i;
   char *info;
-  if(!indexarray || !indexarray->index_array || !fdata) return;
+  if(!indexarray || !indexarray->index_array || !fdata) return ERR;
 
   info = (char *)malloc(MAX_LEN);
   if (!info) {
-    return;
+    return ERR;
   }
 
   for (i=0; i < indexarray->used; i++){
@@ -391,5 +389,5 @@ void comand_printRec(Array_index *indexarray, FILE *fdata){
   }
 
   free(info);
-  return;
+  return OK;
 }

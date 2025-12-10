@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "index.h"
 
 typedef struct
 {
@@ -22,9 +23,9 @@ typedef struct
 #define HEADER 8 /* Tamaño de size_t */
 
 Array_indexdeleted *initArrayDeleted(size_t initialSize);
-void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode);
+Status insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode);
 void freeArrayDeleted(Array_indexdeleted *array);
-void printArrayDeleted(Array_indexdeleted *array);
+Status printArrayDeleted(Array_indexdeleted *array);
 
 Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size);
 void free_Indexdeleted(Indexdeletedbook *indexdeleted);

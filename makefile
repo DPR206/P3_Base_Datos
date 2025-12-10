@@ -22,8 +22,8 @@ clean:
 
 run:
 	@echo "Ejecutando programa..."
-	./$(EXE) first_fit test
+	./$(EXE) worst_fit test
 
 valgrind:
 	@echo "Ejecutando valgrind..."
-	valgrind --leak-check=full ./$(EXE) first_fit test
+	valgrind --leak-check=full ./$(EXE) worst_fit test

@@ -11,17 +11,11 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
 {
   Indexbook *new_index = NULL;
 
-  if (key < 0 || offset < 0 || size == 0)
-  {
-    return NULL;
-  }
+  if (key < 0 || offset < 0 || size == 0) return NULL;
   
   new_index = (Indexbook *)calloc(1, sizeof(Indexbook));
 
-  if (!new_index)
-  {
-    return NULL;
-  }
+  if (!new_index) return NULL;
   
   new_index->key = key;
   new_index->offset = offset;
@@ -32,7 +26,7 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size)
 
 void free_Indexbook(Indexbook *indexbook)
 {
-  free(indexbook);
+  if(indexbook) free(indexbook);
   return;
 }
 
@@ -47,10 +41,7 @@ void free_Indexbook(Indexbook *indexbook)
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos){
   int middle;
 
-  if (!array || end < beginning || bookId < 0)
-  {
-    return NULL;
-  }
+  if (!array || !array->index_array || end < beginning || beginning < 0 || bookId < 0 || !pos) return NULL;
 
   while (beginning <= end)
   {
@@ -78,7 +69,7 @@ int bin_search(Array_index *array, int F, int L, Indexbook *index)
 {
   int f=F, l=L, m;
   /* Comprobacion de errores */
-  if (!array || !array->index_array || L<F || !index){
+  if (!array || !array->index_array || L<F || F<0 || !index){
     return -1;
   }
 
@@ -131,15 +122,15 @@ Array_index *initArray(size_t initialSize)
   return new;
 }
 
-void insertArray(Array_index *ai, Indexbook *index)
+Status insertArray(Array_index *ai, Indexbook *index)
 {
   int pos;
   int first, last, middle;
   Indexbook **tmp;
 
-  if (!ai || !index)
+  if (!ai || !ai->index_array || !index)
   {
-    return;
+    return ERR;
   }
 
   /* Expandir si es necesario */
@@ -147,7 +138,7 @@ void insertArray(Array_index *ai, Indexbook *index)
   {
     ai->size *= 2;
     tmp = realloc(ai->index_array, ai->size * sizeof(Indexbook *));
-    if(!tmp) return;
+    if(!tmp) return ERR;
     ai->index_array = tmp;
   }
 
@@ -160,7 +151,7 @@ void insertArray(Array_index *ai, Indexbook *index)
     while(first <= last){
       middle = (first + last)/2;
       if ((ai->index_array)[middle]->key == index->key){
-        return; /* Duplicado */
+        return ERR; /* Duplicado */
       } else if ((ai->index_array)[middle]->key > index->key){
         last = middle - 1;
       } else {
@@ -174,37 +165,32 @@ void insertArray(Array_index *ai, Indexbook *index)
   ai->index_array[pos] = index;
   ai->used++;
 
-  return;
+  return OK;
 }
 
-int deleteArray(Array_index *ai, int bookId, Indexbook **indexdeleted)
+Status deleteArray(Array_index *ai, int bookId, Indexbook **indexdeleted)
 {
   int pos;
   Indexbook *index=NULL;
 
-  if (!ai || bookId < 0)
-  {
-    return -1;
-  }
+  if (!ai || !ai->index_array || bookId < 0 || !indexdeleted) return ERR;
   
   index = find_index_fromId(ai, bookId, 0, ai->used - 1, &pos);
-  if (!index)
-  {
-    return -1;
-  }
+  if (!index) return ERR;
 
   *indexdeleted = index;
       
-  memmove(ai->index_array+pos, ai->index_array+pos+1, (ai->used-pos)*sizeof(Indexbook *));
+  memmove(&ai->index_array[pos], &ai->index_array[pos + 1], (ai->used-pos-1)*sizeof(Indexbook *));
   ai->used--; 
 
-  return 0;
+  return OK;
 }
 
 
 void freeArray(Array_index *ai)
 {
   long unsigned i;
+  if(!ai || !ai->index_array) return;
 
   for (i = 0; i < ai->used; i++)
   {
@@ -220,8 +206,9 @@ void freeArray(Array_index *ai)
   return;
 }
 
-void printArray(Array_index *array){
+Status printArray(Array_index *array){
   long unsigned i;
+  if(!array || !array->index_array) return ERR;
 
   printf("Size: %ld\n", array->size);
   printf("Used: %ld\n", array->used);
@@ -231,5 +218,5 @@ void printArray(Array_index *array){
   }
   printf("\n");
 
-  return;
+  return OK;
 }

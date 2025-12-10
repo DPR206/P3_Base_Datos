@@ -28,7 +28,7 @@ Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size){
 }
 
 void free_Indexdeleted(Indexdeletedbook *indexdeleted){
-  free(indexdeleted);
+  if (indexdeleted) free(indexdeleted);
   return;
 }
 
@@ -64,29 +64,54 @@ Array_indexdeleted *initArrayDeleted(size_t initialSize){
   return new;
 }
 
-void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode){
+Status insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode){
 
   Indexdeletedbook **tmp;
   int pos;
   int first, last, middle;
+  size_t msize;
 
-  if (!array || !index || mode < BESTFIT || mode > FIRSTFIT)
+  if (!array || !array->indexdeleted_array || !index || mode < BESTFIT || mode > FIRSTFIT)
   {
-    return;
+    return ERR;
   }
 
   if (array->used == array->size)
   {
     array->size *= 2;
     tmp = realloc(array->indexdeleted_array, array->size * sizeof(Indexdeletedbook *));
-    if(!tmp) return;
+    if(!tmp) return ERR;
     array->indexdeleted_array = tmp;
   }
 
   if(mode == FIRSTFIT){
     pos = array->used;
 
-  } else if (mode == BESTFIT || mode == WORSTFIT){
+  } else if (mode == WORSTFIT){
+    if (array->used == 0) {
+      pos = 0;
+    } else {
+      first = 0;
+      last = array->used - 1;
+
+      while (first <= last) {
+        middle = (first + last) / 2;
+        msize = array->indexdeleted_array[middle]->size;
+
+        if (msize == index->size) {
+          pos = middle + 1;
+          break;
+        } else if (msize < index->size) {
+          last = middle - 1;
+        } else {
+          first = middle + 1;
+        }
+      }
+      if (first > last) {
+        pos = first;
+      }
+    }
+  }else if (mode == BESTFIT){
     if (array->used == 0){
       pos = 0;
     } else {
@@ -94,31 +119,36 @@ void insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int 
       last = array->used - 1;
       while(first <= last){
         middle = (first + last)/2;
-        if ((array->indexdeleted_array)[middle]->size == index->size){
+        msize = array->indexdeleted_array[middle]->size;
+
+        if (msize == index->size){
           pos = middle + 1;
           break;
-        } else if ((array->indexdeleted_array)[middle]->size > index->size){
+        } else if (msize > index->size){
           last = middle - 1;
         } else {
           first = middle + 1;
         }
       }
-      pos = first;
+      if (first > last) {
+        pos = first;
+      }
     }
-    memmove(&array->indexdeleted_array[pos + 1], &array->indexdeleted_array[pos], (array->used - pos)*sizeof(Indexdeletedbook *));
-
   } else {
-    return;
+    return ERR;
   }
 
+  memmove(&array->indexdeleted_array[pos + 1], &array->indexdeleted_array[pos], (array->used - pos)*sizeof(Indexdeletedbook *));
   array->indexdeleted_array[pos] = index;
   array->used++;
 
-  return;
+  return OK;
 }
 
 void freeArrayDeleted(Array_indexdeleted *array){
   size_t i;
+
+  if(!array || !array->indexdeleted_array) return;
 
   for (i = 0; i < array->used; i++)
   {
@@ -134,8 +164,10 @@ void freeArrayDeleted(Array_indexdeleted *array){
   return;
 }
 
-void printArrayDeleted(Array_indexdeleted *array){
+Status printArrayDeleted(Array_indexdeleted *array){
   size_t i;
+
+  if(!array || !array->indexdeleted_array) return ERR;
 
   printf("Size: %ld\n", array->size);
   printf("Used: %ld\n", array->used);
@@ -145,5 +177,5 @@ void printArrayDeleted(Array_indexdeleted *array){
   }
   printf("\n");
 
-  return;
+  return OK;
 }
