@@ -113,6 +113,7 @@ Status comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FI
       return ERR;
     }
   }
+  fclose(findex);
 
   if (fread(&strategy, S_INT, 1, fdeleted) != 1) {
     return OK;
@@ -125,11 +126,19 @@ Status comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FI
     deleted = create_Indexdeleted(offset, size);
     if(!deleted) return ERR;
 
-    if(insertArrayDeleted(deletedarray, deleted, mode) == ERR){
-      free_Indexdeleted(deleted);
+    if(strategy == mode){
+      if(insertDeletedMode(indexarray, deletedarray) == ERR){
+        free_Indexdeleted(deleted);
       return ERR;
+      }
+    } else{
+      if(insertArrayDeleted(deletedarray, deleted, mode) == ERR){
+        free_Indexdeleted(deleted);
+        return ERR;
+      }
     }
   }
+  fclose(fdeleted);
 
   return OK;
 }

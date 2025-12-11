@@ -65,7 +65,6 @@ Array_indexdeleted *initArrayDeleted(size_t initialSize){
 }
 
 Status insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode){
-
   Indexdeletedbook **tmp;
   int pos;
   int first, last, middle;
@@ -138,6 +137,28 @@ Status insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, in
     return ERR;
   }
 
+  memmove(&array->indexdeleted_array[pos + 1], &array->indexdeleted_array[pos], (array->used - pos)*sizeof(Indexdeletedbook *));
+  array->indexdeleted_array[pos] = index;
+  array->used++;
+
+  return OK;
+}
+
+Status insertDeletedMode(Array_indexdeleted *array, Indexdeletedbook *index){
+  Indexdeletedbook **tmp;
+  int pos;
+
+  if (!array || !array->indexdeleted_array || !index) return ERR;
+
+  if (array->used == array->size)
+  {
+    array->size *= 2;
+    tmp = realloc(array->indexdeleted_array, array->size * sizeof(Indexdeletedbook *));
+    if(!tmp) return ERR;
+    array->indexdeleted_array = tmp;
+  }
+
+  pos = array->used;
   memmove(&array->indexdeleted_array[pos + 1], &array->indexdeleted_array[pos], (array->used - pos)*sizeof(Indexdeletedbook *));
   array->indexdeleted_array[pos] = index;
   array->used++;

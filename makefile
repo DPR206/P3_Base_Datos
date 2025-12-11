@@ -20,10 +20,26 @@ clean:
 	@echo "Limpiando archivos objeto y binarios..."
 	rm -f *.o core $(EXE)
 
-run:
-	@echo "Ejecutando programa..."
+best_fit:
+	@echo "Ejecutando programa para estrategia best_fit..."
+	./$(EXE) best_fit test
+
+first_fit:
+	@echo "Ejecutando programa para estrategia first_fit..."
+	./$(EXE) first_fit test
+
+worst_fit:
+	@echo "Ejecutando programa para estrategia worst_fit..."
 	./$(EXE) worst_fit test
 
-valgrind:
-	@echo "Ejecutando valgrind..."
+best_valgrind:
+	@echo "Ejecutando valgrind para estrategia best_fit..."
+	valgrind --leak-check=full ./$(EXE) best_fit test
+
+first_valgrind:
+	@echo "Ejecutando valgrind para estrategia first_fit..."
+	valgrind --leak-check=full ./$(EXE) first_fit test
+
+worst_valgrind:
+	@echo "Ejecutando valgrind para estrategia worst_fit..."
 	valgrind --leak-check=full ./$(EXE) worst_fit test

@@ -78,6 +78,13 @@ int main(int argc, char *argv[]) {
   if(comand_load(indexarray, deletedarray, findex, fdeleted, mode) == ERR){
     comand_exit(indexarray, deletedarray, fdata, findex, fdeleted, mode);
     return ERR;
+  } else {
+    findex = fopen(index_name, "wb");
+    fdeleted = fopen(deleted_name, "wb");
+    if(!findex || !fdeleted){
+      printf("Error: couldn't open one of the files.\n");
+      return ERR;
+    }
   }
   fprintf(stdout, "Type command and argument/s.\n");
   fprintf(stdout, "exit\n");
