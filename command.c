@@ -127,7 +127,7 @@ Status comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FI
     if(!deleted) return ERR;
 
     if(strategy == mode){
-      if(insertDeletedMode(indexarray, deletedarray) == ERR){
+      if(insertDeletedMode(deletedarray, deleted) == ERR){
         free_Indexdeleted(deleted);
       return ERR;
       }

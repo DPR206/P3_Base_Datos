@@ -29,5 +29,4 @@ void freeArrayDeleted(Array_indexdeleted *array);
 Status printArrayDeleted(Array_indexdeleted *array);
 
 Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size);
-
 void free_Indexdeleted(Indexdeletedbook *indexdeleted);
