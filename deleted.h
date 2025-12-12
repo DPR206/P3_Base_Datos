@@ -24,9 +24,10 @@ typedef struct
 
 Array_indexdeleted *initArrayDeleted(size_t initialSize);
 Status insertArrayDeleted(Array_indexdeleted *array, Indexdeletedbook *index, int mode);
-Status insertDeletedMode(Array_indexdeleted *array, Indexdeletedbook *index)
+Status insertDeletedMode(Array_indexdeleted *array, Indexdeletedbook *index);
 void freeArrayDeleted(Array_indexdeleted *array);
 Status printArrayDeleted(Array_indexdeleted *array);
 
 Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size);
+
 void free_Indexdeleted(Indexdeletedbook *indexdeleted);
