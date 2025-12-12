@@ -16,7 +16,7 @@ typedef struct
   size_t size;
 } Array_indexdeleted;
 
-#define BESTFIT 0  /* Insertar en el hueco más pequeño que sea válido */ /* SE ORDENA COMO ENTRA */
+#define BESTFIT 0  /* Insertar en el hueco más pequeño que sea válido */
 #define WORSTFIT 1 /* Insertar en el hueco más grande que exista */
 #define FIRSTFIT 2 /* Insertar en el primer hueco valido */
 
@@ -29,4 +29,5 @@ void freeArrayDeleted(Array_indexdeleted *array);
 Status printArrayDeleted(Array_indexdeleted *array);
 
 Indexdeletedbook *create_Indexdeleted(size_t offset, size_t size);
+
 void free_Indexdeleted(Indexdeletedbook *indexdeleted);
