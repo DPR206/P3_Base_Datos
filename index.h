@@ -23,7 +23,6 @@ Indexbook *create_Indexbook(int key, long int offset, size_t size);
 void free_Indexbook(Indexbook *indexbook);
 
 Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int end, int *pos);
-int bin_search(Array_index *array, int F, int L, Indexbook *index);
 
 Array_index *initArray(size_t initialSize);
 Status insertArray(Array_index *ai, Indexbook *index);
