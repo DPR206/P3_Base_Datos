@@ -65,30 +65,6 @@ Indexbook *find_index_fromId(Array_index *array, int bookId, int beginning, int 
   return NULL;
 }
 
-int bin_search(Array_index *array, int F, int L, Indexbook *index)
-{
-  int f=F, l=L, m;
-  /* Comprobacion de errores */
-  if (!array || !array->index_array || L<F || F<0 || !index){
-    return -1;
-  }
-
-  /* Busqueda binaria */
-  while(f<=l){
-    m = (f + l )/2;
-    if(array->index_array[m]->key==index->key){
-      return m;
-    } else if (array->index_array[m]->key > index->key) {
-      l = m - 1;
-    } else {
-      f = m + 1;
-    }
-  }
-
-  /* No se ha encontrado la clave dentro de la tabla */
-  return -1;
-}
-
 
 
 /********************************/
