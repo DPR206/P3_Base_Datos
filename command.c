@@ -33,7 +33,7 @@ Status findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t
   /* WORSTFIT */
   } else if (mode == WORSTFIT){
     if(size <= array->indexdeleted_array[0]->size){
-      pos = array->used - 1;
+      pos = 0;
     }
 
   /* FIRSTFIT */
@@ -65,7 +65,7 @@ Status findgapDeleted(Array_index *indexarray, Array_indexdeleted *array, size_t
     /* Eliminar el hueco usado */
     free_Indexdeleted(array->indexdeleted_array[pos]);
     if(array->used > 0 && (long unsigned int)pos < array->used){
-      memmove(&array->indexdeleted_array[pos], &array->indexdeleted_array[pos + 1], (array->used - pos) * sizeof(Indexdeletedbook *));
+      memmove(&array->indexdeleted_array[pos], &array->indexdeleted_array[pos + 1], (array->used - pos - 1) * sizeof(Indexdeletedbook *));
       array->used--;
     }
 
@@ -116,6 +116,7 @@ Status comand_load(Array_index *indexarray, Array_indexdeleted *deletedarray, FI
   fclose(findex);
 
   if (fread(&strategy, S_INT, 1, fdeleted) != 1) {
+    fclose(fdeleted);
     return OK;
   }
   while (1) {

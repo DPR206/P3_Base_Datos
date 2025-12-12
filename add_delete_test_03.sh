@@ -193,4 +193,5 @@ if {[regexp -nocase "identical" $output] || [regexp -nocase "idénticos" $output
 } else {
     puts "3) files differ, :-("
 }
+##
 puts "4) Script end"
