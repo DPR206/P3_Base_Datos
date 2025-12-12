@@ -380,24 +380,24 @@ Status comand_printLst(Array_indexdeleted *deletedarray){
 
 Status comand_printRec(Array_index *indexarray, FILE *fdata){
   long unsigned i;
-  char *info;
-  if(!indexarray || !indexarray->index_array || !fdata) return ERR;
+  int key;
+  size_t bookSize;
+  char isbn[ISBN + 1], book[MAX_LEN]; 
 
-  info = (char *)malloc(MAX_LEN);
-  if (!info) {
-    return ERR;
-  }
+  if(!indexarray || !indexarray->index_array || !fdata) return ERR;
 
   for (i=0; i < indexarray->used; i++){
     /* Leer la informacion desde la posicion */
     fseek(fdata, indexarray->index_array[i]->offset + HEADER, SEEK_SET);
-    fread(info, indexarray->index_array[i]->size, 1, fdata);
-    info[indexarray->index_array[i]->size ] = '\0';
+    if (fread(&key, S_INT, 1, fdata) != 1) return ERR;
+    if (fread(isbn, ISBN, 1, fdata) != 1) return ERR;
+    isbn[ISBN] = '\0';
+    bookSize = indexarray->index_array[i]->size - S_INT - ISBN;
+    if (fread(book, bookSize, 1, fdata) != 1) return ERR;
+    book[bookSize] = '\0';
 
     /* Imprimir mensaje */
-    fprintf(stdout, "  %s\n", info);
+    fprintf(stdout, "%d|%s|%s\n", key, isbn, book);
   }
-
-  free(info);
   return OK;
 }
